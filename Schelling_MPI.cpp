@@ -7,7 +7,7 @@
 /// Schelling model parallelized with MPI
 
 /// Compile with 'mpic++ Schelling_MPI.cpp -o Schelling_MPI -std=c++11'
-/// Run with 'mpirun -n {psize} ./Schelling_MPI {coeff} {n_iter} {N}'
+/// Run with 'mpirun -n {psize} ./Schelling_MPI {coeff} {n_iter} {N} {IO_flag}'
 
 class City
 {
@@ -64,7 +64,7 @@ City::City(const int newM, const int newN, const double newcoeff)
     wantmove = (int*)malloc((M+2) * N * sizeof(int));
 
     std::mt19937 generator(std::random_device{}());
-        std::uniform_int_distribution<int> distribution(0, 1);
+    std::uniform_int_distribution<int> distribution(0, 1);
 
     for (int i = 0; i < M+2; ++i)
     {
@@ -236,6 +236,7 @@ int main(int argc, char ** argv)
     double coeff;
     int n_iter;
     int N;
+    int IO_flag;
 
     std::istringstream ss1(argv[1]);
     if (!(ss1 >> coeff)) {
@@ -258,7 +259,14 @@ int main(int argc, char ** argv)
       std::cerr << "Trailing characters after number: " << argv[3] << '\n';
     }
 
+    std::istringstream ss4(argv[4]);
+    if (!(ss4 >> IO_flag)) {
+      std::cerr << "Invalid IO flag: " << argv[4] << '\n';
+    } else if (!ss4.eof()) {
+      std::cerr << "Trailing characters after number: " << argv[4] << '\n';
+    }
     MPI_Init(&argc, &argv);
+
     int prank;
     int psize;
 
@@ -280,7 +288,7 @@ int main(int argc, char ** argv)
 
     for (int iter=0; iter < n_iter; iter++)
     {
-        city.FileDump(iter, prank);
+        if (IO_flag) city.FileDump(iter, prank);
         city.ExchangeRows(prank, psize, MPI_COMM_WORLD);
         city.EvaluateMove();
         counts = city.getCounts();
@@ -298,7 +306,7 @@ int main(int argc, char ** argv)
         counts[1] = counts_total - counts[0];
         city.setCounts(counts[0], counts[1]);
         city.Shuffle();
-                MPI_Barrier(MPI_COMM_WORLD);
+        MPI_Barrier(MPI_COMM_WORLD);
     }
 
     MPI_Finalize();
