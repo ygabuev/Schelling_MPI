@@ -110,17 +110,8 @@ void City::EvaluateMove()
             n_white_neighbors = 0;
             cell_color = houses[N * i + j];
 
-            if (j==0)
-            {
-                lind = N-1;
-                rind = 1;
-            } else if (j == N-1) {
-                lind = N-2;
-                rind = 0;
-            } else {
-                lind = j-1;
-                rind = j+1;
-            }
+            lind = (N + j-1) % N;
+            rind = (N + j+1) % N;
 
             n_white_neighbors += houses[(i - 1) * N + lind]; // row above
             n_white_neighbors += houses[(i - 1) * N + j];
@@ -151,8 +142,8 @@ void City::ExchangeRows(int prank, int psize, MPI_Comm communicator) {
     int neighbor_upper = (psize + prank-1) % psize;
     int neighbor_lower = (psize + prank+1) % psize;
 
-    MPI_Isend(houses,           N, MPI_INT, neighbor_upper, 777, communicator, &request);
-    MPI_Isend(houses + (M+1)*N, N, MPI_INT, neighbor_lower, 777, communicator, &request);
+    MPI_Isend(houses+N,           N, MPI_INT, neighbor_upper, 777, communicator, &request);
+    MPI_Isend(houses + M*N, N, MPI_INT, neighbor_lower, 777, communicator, &request);
     MPI_Recv( houses,           N, MPI_INT, neighbor_upper, 777, communicator, &status);
     MPI_Recv( houses + (M+1)*N, N, MPI_INT, neighbor_lower, 777, communicator, &status);
 }
